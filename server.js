@@ -1140,6 +1140,13 @@ app.get('/api/children/:id/journey', withScope, async (req, res) => {
       ORDER BY sr.id DESC
     `, [childId]);
 
+    for (const report of reports) {
+      const attendance = await getSemesterAttendance(report.child_id, report.semester_id);
+      report.attendance_percentage = attendance.total_sessions
+        ? Number((attendance.hadir_count * 100 / attendance.total_sessions).toFixed(1))
+        : null;
+    }
+
     // 5. Activity Certificates (Tahap Berproses - Pencapaian Keterampilan)
     const certificates = await all(`
       SELECT ac.*, p.name as program_name, p.pillar
@@ -2215,6 +2222,9 @@ app.get('/api/reports/semester', withScope, async (req, res) => {
       `, [rep.child_id, rep.child_id, rep.child_id, rep.child_id, rep.child_id, rep.semester_id]);
 
       rep.attendance_stats = await getSemesterAttendance(rep.child_id, rep.semester_id);
+      rep.attendance_percentage = rep.attendance_stats.total_sessions
+        ? Number((rep.attendance_stats.hadir_count * 100 / rep.attendance_stats.total_sessions).toFixed(1))
+        : null;
       
       // 3. Fetch Latest Health & Nutrition Record (Antropometri & PMT)
       const healthRecord = await get(`
@@ -2270,12 +2280,11 @@ app.put('/api/reports/semester/:id/approve', withScope, async (req, res) => {
 app.put('/api/reports/semester/:id', withScope, requireRole(['koordinator_ppa', 'mentor']), async (req, res) => {
   try {
     const reportId = req.params.id;
-    const { spiritual_score, cognitive_score, physical_score, socioemotional_score, attendance_percentage, overall_narrative_summary, mentor_homeroom_notes } = req.body;
+    const { spiritual_score, cognitive_score, physical_score, socioemotional_score, overall_narrative_summary, mentor_homeroom_notes } = req.body;
 
     const scores = [spiritual_score, cognitive_score, physical_score, socioemotional_score];
-    if (scores.some(score => score != null && (!Number.isFinite(score) || score < 1 || score > 4)) ||
-        (attendance_percentage != null && (!Number.isFinite(attendance_percentage) || attendance_percentage < 0 || attendance_percentage > 100))) {
-      return res.status(400).json({ error: 'Skor harus antara 1 dan 4, dan kehadiran antara 0 dan 100.' });
+    if (scores.some(score => score != null && (!Number.isFinite(score) || score < 1 || score > 4))) {
+      return res.status(400).json({ error: 'Skor harus antara 1 dan 4.' });
     }
 
     const rep = await get(`SELECT * FROM semester_reports WHERE id = ?`, [reportId]);
@@ -2290,12 +2299,11 @@ app.put('/api/reports/semester/:id', withScope, requireRole(['koordinator_ppa', 
         cognitive_score = COALESCE(?, cognitive_score),
         physical_score = COALESCE(?, physical_score),
         socioemotional_score = COALESCE(?, socioemotional_score),
-        attendance_percentage = COALESCE(?, attendance_percentage),
         overall_narrative_summary = COALESCE(?, overall_narrative_summary),
         mentor_homeroom_notes = COALESCE(?, mentor_homeroom_notes),
         verified_by_supervisor = 0, approved_by_coordinator = 0
       WHERE id = ?
-    `, [spiritual_score, cognitive_score, physical_score, socioemotional_score, attendance_percentage, overall_narrative_summary, mentor_homeroom_notes, reportId]);
+    `, [spiritual_score, cognitive_score, physical_score, socioemotional_score, overall_narrative_summary, mentor_homeroom_notes, reportId]);
 
     res.json({ message: 'Rapor semesteran berhasil diperbarui.' });
   } catch (err) {
@@ -2587,7 +2595,7 @@ app.get('/api/analytics/dashboard', withScope, async (req, res) => {
 
     let attParams = [];
     let attSql = `
-      SELECT (CAST(COUNT(CASE WHEN at.status = 'Hadir' THEN 1 END) AS FLOAT) / NULLIF(COUNT(*), 0)) * 100 as rate
+      SELECT (CAST(COUNT(CASE WHEN at.status = 'Hadir' THEN 1 END) AS FLOAT) / NULLIF(COUNT(*), 0)) * 100 as rate, COUNT(*) as total
       FROM attendances at
       JOIN schedules sc ON at.schedule_id = sc.id
       WHERE 1=1
@@ -2630,7 +2638,8 @@ app.get('/api/analytics/dashboard', withScope, async (req, res) => {
       totalChildren: totalChildren?.count || 0,
       totalPrograms: totalPrograms?.count || 0,
       totalCohorts: totalCohorts?.count || 0,
-      attendanceRate: Math.round(avgAttendance?.rate || 0),
+      attendanceRate: avgAttendance?.total ? Math.round(avgAttendance.rate) : null,
+      attendanceRecords: avgAttendance?.total || 0,
       programs: programsList
     });
   } catch (err) {

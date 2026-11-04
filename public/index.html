@@ -340,8 +340,8 @@
         <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between hover:shadow transition">
           <div>
             <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Presensi Kehadiran</p>
-            <h3 id="stat-attendance" class="text-3xl font-extrabold text-emerald-700 mt-1">100%</h3>
-            <p class="text-xs text-emerald-800 font-medium mt-1">Aktif & Tertib di PPA</p>
+            <h3 id="stat-attendance" class="text-3xl font-extrabold text-emerald-700 mt-1">Belum ada data</h3>
+            <p class="text-xs text-emerald-800 font-medium mt-1">Berdasarkan presensi yang tercatat</p>
           </div>
           <div class="w-12 h-12 bg-emerald-50 text-emerald-800 rounded-2xl flex items-center justify-center">
             <i data-lucide="clipboard-check" class="w-6 h-6"></i>
@@ -352,8 +352,8 @@
         <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between hover:shadow transition">
           <div>
             <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Status Gizi & PMT</p>
-            <h3 class="text-3xl font-extrabold text-teal-700 mt-1">100% Sehat</h3>
-            <p class="text-xs text-teal-800 font-medium mt-1">0 Kasus Stunting / Gizi Buruk</p>
+            <h3 class="text-3xl font-extrabold text-teal-700 mt-1">Lihat Data PMT</h3>
+            <p class="text-xs text-teal-800 font-medium mt-1">Berdasarkan catatan kesehatan anak</p>
           </div>
           <div class="w-12 h-12 bg-teal-50 text-teal-800 rounded-2xl flex items-center justify-center">
             <i data-lucide="heart-pulse" class="w-6 h-6"></i>
@@ -552,7 +552,7 @@
               </div>
 
               <div class="mt-2 pt-2 border-t border-rose-100">
-                <span class="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md block text-center border border-emerald-200">100% Gizi Baik</span>
+                <span class="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md block text-center border border-emerald-200">Catatan gizi tersedia di menu kesehatan</span>
               </div>
 
             </div>
@@ -721,8 +721,8 @@
 
             <div>
               <span class="text-[10px] font-black uppercase text-slate-500 tracking-wider">Pencegahan Stunting</span>
-              <h5 class="text-sm font-black text-slate-900">100% Gizi Normal</h5>
-              <p class="text-[11px] text-emerald-700 font-semibold">0 Anak Stunting • PMT Rutin Tiap Sesi</p>
+              <h5 class="text-sm font-black text-slate-900">Lihat data gizi anak</h5>
+              <p class="text-[11px] text-emerald-700 font-semibold">Berdasarkan catatan kesehatan anak</p>
             </div>
 
           </div>
@@ -734,7 +734,7 @@
 
             <div>
               <span class="text-[10px] font-black uppercase text-slate-500 tracking-wider">Kepatuhan Kehadiran Riil</span>
-              <h5 class="text-sm font-black text-slate-900">100% Presensi Tercatat</h5>
+              <h5 class="text-sm font-black text-slate-900">Lihat ringkasan presensi di atas</h5>
               <p class="text-[11px] text-blue-700 font-semibold">Standar Compassion: Min. 80%</p>
             </div>
 
@@ -3345,8 +3345,8 @@
         </div>
 
         <div>
-          <label class="font-bold text-slate-700 block mb-1">Persentase Kehadiran (%):</label>
-          <input type="number" step="0.1" min="0" max="100" id="edit-report-attendance" class="w-full text-xs p-2 border border-slate-300 rounded-xl font-bold">
+          <label class="font-bold text-slate-700 block mb-1">Persentase Kehadiran dari Presensi:</label>
+          <input type="number" step="0.1" min="0" max="100" id="edit-report-attendance" readonly class="w-full text-xs p-2 border border-slate-300 rounded-xl font-bold">
         </div>
 
         <div>

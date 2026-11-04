@@ -1508,7 +1508,7 @@ async function loadDashboard() {
 
     if (statChildren) statChildren.innerText = `${data.totalChildren || 0} Anak`;
     if (statPrograms) statPrograms.innerText = `${data.totalPrograms || 0} Program`;
-    if (statAttendance) statAttendance.innerText = `${data.attendanceRate || 0}%`;
+    if (statAttendance) statAttendance.innerText = data.attendanceRecords ? `${data.attendanceRate}%` : 'Belum ada data';
     if (statChildrenSub) {
       statChildrenSub.innerText = `${data.totalCohorts || 0} Kelompok Usia Dampingan`;
     }
@@ -4610,7 +4610,6 @@ async function handleEditReportSubmit(event) {
   const cognitive_score = parseFloat(document.getElementById('edit-report-cognitive').value);
   const socioemotional_score = parseFloat(document.getElementById('edit-report-socio').value);
   const physical_score = parseFloat(document.getElementById('edit-report-physical').value);
-  const attendance_percentage = parseFloat(document.getElementById('edit-report-attendance').value);
   const overall_narrative_summary = document.getElementById('edit-report-narrative').value;
   const mentor_homeroom_notes = document.getElementById('edit-report-mentor-notes').value;
 
@@ -4620,7 +4619,7 @@ async function handleEditReportSubmit(event) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         spiritual_score, cognitive_score, socioemotional_score, physical_score,
-        attendance_percentage, overall_narrative_summary, mentor_homeroom_notes
+        overall_narrative_summary, mentor_homeroom_notes
       })
     });
     const data = await res.json();
