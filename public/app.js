@@ -3615,7 +3615,7 @@ async function loadSessionDetail(scheduleId) {
     }
 
     attendances.forEach(a => {
-      const status = a.status || 'Hadir';
+      const status = a.status || '';
       const photoSrc = a.photo_data || 'https://images.unsplash.com/photo-1543332164-6e82f355badc?auto=format&fit=crop&w=300&q=80';
 
       tbody.innerHTML += `
@@ -3699,10 +3699,15 @@ async function saveAttendanceAndRealSchedule() {
   const attendances = [];
   document.querySelectorAll('.attendance-child-row').forEach(row => {
     const childId = parseInt(row.getAttribute('data-child-id'));
-    const status = document.getElementById(`status-child-${childId}`)?.value || 'Hadir';
+    const status = document.getElementById(`status-child-${childId}`)?.value || '';
     const notes = document.getElementById(`notes-child-${childId}`)?.value || '';
     attendances.push({ child_id: childId, status, notes });
   });
+
+  if (attendances.some(item => !item.status)) {
+    showToast('Pilih status kehadiran setiap anak sebelum menyimpan.', 'error');
+    return;
+  }
 
   const btn = document.getElementById('btn-save-attendance');
   const origBtnContent = btn ? btn.innerHTML : '';

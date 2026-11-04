@@ -453,7 +453,7 @@ app.get('/api/admin/backup', withScope, requireRole(['koordinator_ppa']), (req, 
   res.download(path.join(__dirname, 'pathway_ppa.sqlite'), `pathway_ppa_backup_${stamp}.sqlite`);
 });
 
-app.get('/api/ppas', async (req, res) => {
+app.get('/api/ppas', withScope, async (req, res) => {
   try {
     const ppas = await all(`SELECT * FROM ppa_profiles ORDER BY id ASC`);
     res.json(ppas);
@@ -462,7 +462,7 @@ app.get('/api/ppas', async (req, res) => {
   }
 });
 
-app.get('/api/ppas/:id', async (req, res) => {
+app.get('/api/ppas/:id', withScope, async (req, res) => {
   try {
     const ppa = await get(`SELECT * FROM ppa_profiles WHERE id = ?`, [req.params.id]);
     if (!ppa) return res.status(404).json({ error: 'PPA tidak ditemukan.' });
@@ -553,7 +553,7 @@ app.delete('/api/ppas/:id', withScope, requireRole(['koordinator_ppa']), async (
   }
 });
 
-app.get('/api/profile', async (req, res) => {
+app.get('/api/profile', withScope, async (req, res) => {
   try {
     const targetId = req.query.id || req.query.ppa_id;
     let profile;
@@ -572,7 +572,7 @@ app.get('/api/profile', async (req, res) => {
 // ==========================================
 // 3. TAHUN FISKAL & SEMESTER
 // ==========================================
-app.get('/api/fiscal-years', async (req, res) => {
+app.get('/api/fiscal-years', withScope, async (req, res) => {
   try {
     const years = await all(`SELECT * FROM fiscal_years ORDER BY id DESC`);
     const semesters = await all(`SELECT * FROM semesters ORDER BY id ASC`);
@@ -1655,14 +1655,14 @@ app.get('/api/schedules/:id/attendances', withScope, async (req, res) => {
 
     const attendances = await all(`
       SELECT ch.id as child_id, ch.full_name as child_name, ch.child_id_compassion, ch.photo_data,
-             COALESCE(at.status, 'Hadir') as status,
+             at.status as status,
              COALESCE(at.notes, '') as notes,
              at.id as attendance_id
       FROM schedules sc
       JOIN programs p ON sc.program_id = p.id
       JOIN program_enrollments pe ON pe.program_id = p.id AND pe.status = 'Aktif'
       JOIN children ch ON ch.id = pe.child_id
-      LEFT JOIN attendances at ON at.schedule_id = sc.id AND at.child_id = ch.id
+      LEFT JOIN attendances at ON at.id = (SELECT MAX(id) FROM attendances WHERE schedule_id = sc.id AND child_id = ch.id)
       WHERE sc.id = ?
       ORDER BY ch.full_name ASC
     `, [req.params.id]);
@@ -1682,6 +1682,20 @@ app.post('/api/schedules/:id/attendances', withScope, requireRole(['koordinator_
     }
 
     const { attendances, real_meeting_date, real_start_time, real_end_time, real_room_location } = req.body;
+
+    if (!Array.isArray(attendances) || attendances.length === 0) {
+      return res.status(400).json({ error: 'Pilih minimal satu anak untuk dicatat kehadirannya.' });
+    }
+    const enrolled = await all(`SELECT child_id FROM program_enrollments WHERE program_id = ? AND status = 'Aktif'`, [sched.program_id]);
+    const allowed = new Set(enrolled.map(item => Number(item.child_id)));
+    const seen = new Set();
+    for (const item of attendances) {
+      const id = Number(item.child_id);
+      if (!allowed.has(id) || seen.has(id) || !['Hadir', 'Izin', 'Sakit', 'Alpa'].includes(item.status)) {
+        return res.status(400).json({ error: 'Daftar anak atau status kehadiran tidak valid.' });
+      }
+      seen.add(id);
+    }
 
     // 1. Simpan penyesuaian waktu real pertemuan jika diubah saat absensi
     if (real_meeting_date || real_start_time || real_end_time || real_room_location) {
@@ -1930,6 +1944,12 @@ app.post('/api/programs/:id/evaluations/tutor', withScope, requireRole(['koordin
     if (!inScope(req.scope, 'childIds', child_id)) {
       return denyOutOfScope(res, 'Anak dampingan ini');
     }
+    const enrollment = await get(`SELECT id FROM program_enrollments WHERE program_id = ? AND child_id = ? AND status = 'Aktif'`, [req.params.id, child_id]);
+    if (!enrollment) return res.status(400).json({ error: 'Anak belum terdaftar aktif pada program ini.' });
+    const scores = [material_mastery_score, practical_task_score, technical_discipline_score];
+    if (scores.some(value => value === null || value === '' || !Number.isFinite(Number(value)) || Number(value) < 1 || Number(value) > 4)) {
+      return res.status(400).json({ error: 'Semua nilai evaluasi harus antara 1 dan 4.' });
+    }
     // Calculate final weighted score: (40% practical + 35% material + 25% discipline)
     const final_tutor_score = (
       (parseFloat(material_mastery_score) * 0.35) +
@@ -1969,6 +1989,12 @@ app.post('/api/programs/:id/evaluations/mentor', withScope, requireRole(['koordi
     }
     if (!inScope(req.scope, 'childIds', child_id)) {
       return denyOutOfScope(res, 'Anak dampingan ini');
+    }
+    const enrollment = await get(`SELECT id FROM program_enrollments WHERE program_id = ? AND child_id = ? AND status = 'Aktif'`, [req.params.id, child_id]);
+    if (!enrollment) return res.status(400).json({ error: 'Anak belum terdaftar aktif pada program ini.' });
+    const scores = [spiritual_attitude_score, social_emotional_score, attendance_commitment_score];
+    if (scores.some(value => value === null || value === '' || !Number.isFinite(Number(value)) || Number(value) < 1 || Number(value) > 4)) {
+      return res.status(400).json({ error: 'Semua nilai evaluasi harus antara 1 dan 4.' });
     }
     const final_mentor_score = (
       (parseFloat(spiritual_attitude_score) * 0.40) +
@@ -2024,7 +2050,13 @@ app.post('/api/programs/:id/certificates/issue', withScope, requireRole(['koordi
     const tutorEval = await get(`SELECT * FROM tutor_evaluations WHERE program_id = ? AND child_id = ?`, [progId, child_id]);
     const mentorEval = await get(`SELECT * FROM mentor_evaluations WHERE program_id = ? AND child_id = ?`, [progId, child_id]);
 
-    let finalScore = 3.5;
+    if (!tutorEval && !mentorEval) {
+      return res.status(400).json({ error: 'Isi evaluasi terlebih dahulu sebelum menerbitkan sertifikat.' });
+    }
+    const enrollment = await get(`SELECT id FROM program_enrollments WHERE program_id = ? AND child_id = ? AND status = 'Aktif'`, [progId, child_id]);
+    if (!enrollment) return res.status(400).json({ error: 'Anak belum terdaftar aktif pada program ini.' });
+
+    let finalScore;
     if (tutorEval && mentorEval) {
       finalScore = (parseFloat(tutorEval.final_tutor_score) * 0.6) + (parseFloat(mentorEval.final_mentor_score) * 0.4);
     } else if (tutorEval) {
