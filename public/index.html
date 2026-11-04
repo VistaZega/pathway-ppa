@@ -1401,11 +1401,11 @@
         </div>
 
         <div class="flex flex-wrap items-center gap-2">
-          <button onclick="generateSemesterReports()" class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold px-3.5 py-2 rounded-xl flex items-center space-x-1.5 shadow transition">
+          <button id="btn-generate-reports" onclick="generateSemesterReports()" class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold px-3.5 py-2 rounded-xl flex items-center space-x-1.5 shadow transition">
             <i data-lucide="refresh-cw" class="w-4 h-4"></i>
-            <span>⚡ Sinkronkan Rapor dari Modul</span>
+            <span>Sinkronkan Rapor dari Modul</span>
           </button>
-          <button onclick="openModalEditCurrentReport()" class="bg-slate-700 hover:bg-slate-800 text-white text-xs font-bold px-3.5 py-2 rounded-xl flex items-center space-x-1.5 shadow transition">
+          <button id="btn-edit-report" onclick="openModalEditCurrentReport()" class="bg-slate-700 hover:bg-slate-800 text-white text-xs font-bold px-3.5 py-2 rounded-xl flex items-center space-x-1.5 shadow transition">
             <i data-lucide="edit-3" class="w-4 h-4"></i>
             <span>✏️ Edit Rapor Ini</span>
           </button>

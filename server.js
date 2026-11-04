@@ -453,6 +453,15 @@ app.get('/api/admin/backup', withScope, requireRole(['koordinator_ppa']), (req, 
   res.download(path.join(__dirname, 'pathway_ppa.sqlite'), `pathway_ppa_backup_${stamp}.sqlite`);
 });
 
+app.get('/api/auth/ppas', async (req, res) => {
+  try {
+    const ppas = await all(`SELECT id, code, name, church_district, city FROM ppa_profiles ORDER BY id ASC`);
+    res.json(ppas);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.get('/api/ppas', withScope, async (req, res) => {
   try {
     const ppas = await all(`SELECT * FROM ppa_profiles ORDER BY id ASC`);

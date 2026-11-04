@@ -166,7 +166,7 @@ window.fetch = async function (url, options = {}) {
   const response = await _originalFetch(url, opts);
 
   // Auto redirect to auth screen if unauthorized or token expired (only on 401)
-  if (response.status === 401 && !url.includes('/api/auth/login')) {
+  if (response.status === 401 && token && !url.includes('/api/auth/login')) {
     console.warn(`Sesi login tidak valid (401) pada ${url}. Mengarahkan ke layar masuk.`);
     handleLogout();
     showLoginError('Sesi Anda telah kedaluwarsa. Silakan masuk kembali.');
@@ -266,7 +266,7 @@ function hideLoginError() {
 
 async function loadPpasForLogin() {
   try {
-    const res = await fetch('/api/ppas');
+    const res = await fetch('/api/auth/ppas');
     if (res.ok) {
       ppasData = await res.json();
       const select = document.getElementById('login-ppa-select');
@@ -771,6 +771,11 @@ function applyRoleMenuPermissions(role) {
         bannerIcon.innerHTML = `<i data-lucide="settings-2" class="w-5 h-5"></i>`;
       }
     }
+  }
+
+  for (const id of ['btn-generate-reports', 'btn-edit-report']) {
+    const button = document.getElementById(id);
+    if (button) button.classList.toggle('hidden', !['admin', 'koordinator_ppa', 'mentor'].includes(role));
   }
 
   const btnBackup = document.getElementById('btn-backup-db');
@@ -4980,6 +4985,7 @@ function renderSelectedReport(reportId) {
       </p>
     </div>
 
+    ${report.approved_by_coordinator ? '' : '<p class="mb-3 rounded-lg border border-amber-300 bg-amber-50 p-2 text-center font-bold text-amber-900">DRAF · BELUM DISAHKAN</p>'}
     <!-- Tanda Tangan Resmi Rapor (Tanpa Stempel Sesuai Arahan) -->
     <div class="mt-8 pt-4 border-t border-slate-200">
       <div class="text-center text-xs text-slate-500 mb-4">${ppaProfile.city || 'Gunungsitoli'}</div>
@@ -4995,7 +5001,7 @@ function renderSelectedReport(reportId) {
           <p class="text-[10px] text-slate-500">${ppaProfile.partnership_head_title || 'Komisi Pengawas Gereja'}</p>
         </div>
         <div>
-          <p class="text-slate-600 mb-12">Disahkan Oleh,<br><span class="font-semibold text-slate-800">Koordinator PPA</span>,</p>
+          <p class="text-slate-600 mb-12">${report.approved_by_coordinator ? 'Disahkan Oleh' : 'Menunggu Pengesahan'}<br><span class="font-semibold text-slate-800">Koordinator PPA</span>,</p>
           <p class="font-bold text-slate-900 underline">${ppaProfile.coordinator_name || 'Oryet Fanolo Harefa'}</p>
           <p class="text-[10px] text-slate-500">${ppaProfile.name || 'Koordinator PPA'}</p>
         </div>

@@ -198,3 +198,16 @@ header {
 .nav-tab:hover {
   transform: translateY(-1px);
 }
+
+/* Keep long filters and form actions reachable on small screens. */
+@media (max-width: 640px) {
+  #view-reports select,
+  #view-reports input[type="text"] {
+    max-width: 100%;
+  }
+  #view-reports .overflow-x-auto,
+  #view-staff .overflow-x-auto,
+  #view-attendance .overflow-x-auto {
+    -webkit-overflow-scrolling: touch;
+  }
+}
